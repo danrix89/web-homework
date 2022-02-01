@@ -5,33 +5,76 @@ defmodule Homework.Repo do
 
   import Ecto.Query
 
-  def paginate(table, _latest_id, page_size, :first = _page_direction) do
+  def sample_a(id, page_direction, page_size) do
+    query = key_set_pagination_query(Homework.Users.User, id, page_size, page_direction)
+    from(
+      q in query,
+      where: ilike(field(q, :first_name), "%Da%") and fragment("SIMILARITY(?, ?) > 0", field(q, :first_name), "%Da%"),
+      where: ilike(field(q, :last_name), "%Ri%") and fragment("SIMILARITY(?, ?) > 0", field(q, :last_name), "%Ri%"),
+      order_by: fragment("LEVENSHTEIN(?, ?)", field(q, :first_name), "%Da%"),
+      order_by: fragment("LEVENSHTEIN(?, ?)", field(q, :last_name), "%Ri%")
+    )
+    |> all()
+  end
+
+  def sample_b(page_size, page_number) do
+    query = standard_pagination_query(Homework.Users.User, page_size, page_number)
+    from(
+      q in query,
+      where: ilike(field(q, :first_name), "%Da%") and fragment("SIMILARITY(?, ?) > 0", field(q, :first_name), "%Da%"),
+      where: ilike(field(q, :last_name), "%Ri%") and fragment("SIMILARITY(?, ?) > 0", field(q, :last_name), "%Ri%"),
+      order_by: fragment("LEVENSHTEIN(?, ?)", field(q, :first_name), "%Da%"),
+      order_by: fragment("LEVENSHTEIN(?, ?)", field(q, :last_name), "%Ri%")
+    )
+    |> all()
+  end
+
+  ##############################################################
+
+  def standard_pagination_query(table, limit, offset) do
+    from(
+      t in table,
+      limit: ^limit,
+      offset: ^offset
+    )
+  end
+
+  ##############################################################
+
+  def estimated_record_count(table) do
+    table_name = table.__schema__(:source)
+    result = query!("SELECT reltuples AS estimate FROM pg_class where relname = '" <> table_name <> "'")
+    result.rows |> Enum.flat_map(fn x -> x end) |> List.first() |> trunc()
+  end
+
+  ##############################################################
+
+  def key_set_pagination_query(table, _latest_id, page_size, :first = _page_direction) do
     from(
       t in table,
       order_by: [{:desc, field(t, :id)}],
       limit: ^page_size
     )
-    |> all()
   end
 
-  def paginate(table, latest_id, page_size, :next = _page_direction) do
+  def key_set_pagination_query(table, latest_id, page_size, :next = _page_direction) do
+    binary_id = UUID.string_to_binary!(latest_id)
     from(
       t in table,
-      where: fragment("? < ?", field(t, :id), ^latest_id),
+      where: fragment("? < ?", field(t, :id), ^binary_id),
       order_by: [{:desc, field(t, :id)}],
       limit: ^page_size
     )
-    |> all()
   end
 
-  def paginate(table, latest_id, page_size, :previous = _page_direction) do
+  def key_set_pagination_query(table, latest_id, page_size, :previous = _page_direction) do
+    binary_id = UUID.string_to_binary!(latest_id)
     from(
       t in table,
-      where: fragment("? > ?", field(t, :id), ^latest_id),
+      where: fragment("? > ?", field(t, :id), ^binary_id),
       order_by: [{:asc, field(t, :id)}],
       limit: ^page_size
     )
-    |> all()
   end
 
   ##############################################################

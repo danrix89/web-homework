@@ -4,6 +4,8 @@ The following are the objectives I was able to complete with comments and reason
 
 Due to extreme time constraints with my current job (being on support last week), I was only able to fully complete 4 and partially complete 1 of the 6 objectives.
 
+Also, I didn't know how to submit this other than giving one big PR, but if you want to see individual PRs and commits on my GitHub repo check it how [here](https://github.com/danrix89/web-homework/pulls?q=is%3Apr+is%3Aclosed).
+
 ## Objective: Filtering
 
 * Added helper functions to Homework.Repo to enable:
